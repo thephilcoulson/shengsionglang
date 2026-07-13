@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShengSiong — Technical Board Deck</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+<style>
+:root{--ss-red:#e2231a;--ss-gold:#f5c518;--ss-ink:#0d0d0f;}
+.reveal{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+.reveal h1,.reveal h2,.reveal h3{font-weight:800;letter-spacing:-0.02em;text-transform:none;}
+.reveal h1{color:var(--ss-gold);}
+.reveal h2{color:var(--ss-gold);}
+.reveal section{text-align:left;}
+.reveal .center{text-align:center;}
+.reveal .kicker{color:var(--ss-red);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.5em;}
+.reveal pre{width:100%;box-shadow:0 6px 24px rgba(0,0,0,.5);font-size:.42em;}
+.reveal pre code{max-height:none;padding:14px 18px;border-radius:8px;}
+.reveal table{font-size:.62em;}
+.reveal table th{color:var(--ss-gold);border-bottom:2px solid var(--ss-red);}
+.reveal .cols{display:flex;gap:32px;align-items:flex-start;}
+.reveal .cols>div{flex:1;}
+.reveal .card{background:#15151a;border:1px solid #2a2a33;border-left:4px solid var(--ss-red);border-radius:8px;padding:14px 18px;margin:8px 0;font-size:.72em;}
+.reveal .metric{font-size:2.1em;font-weight:800;color:var(--ss-gold);line-height:1;}
+.reveal .metric-row{display:flex;gap:26px;justify-content:center;text-align:center;margin-top:18px;}
+.reveal .metric-row .lbl{font-size:.5em;color:#aaa;text-transform:uppercase;letter-spacing:.1em;}
+.reveal .pill{display:inline-block;background:var(--ss-red);color:#fff;border-radius:999px;padding:3px 12px;font-size:.5em;font-weight:700;margin:2px;}
+.reveal .muted{color:#9aa;}
+.reveal .flow{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.6em;color:#cfd;background:#111;padding:16px;border-radius:8px;line-height:1.5;}
+.reveal small.foot{position:fixed;bottom:8px;left:16px;color:#556;font-size:12px;}
+.reveal .good{color:#7fe08a;}
+</style>
+</head>
+<body>
+<div class="reveal"><div class="slides">
+
+<!-- 1 TITLE -->
+<section data-background-color="#0d0d0f" class="center">
+  <div class="kicker">Board Technical Review · Earnings Call Prep</div>
+  <h1 style="font-size:2.6em;margin:.2em 0;">ShengSiong<span style="color:#fff;">Lang</span></h1>
+  <p style="font-size:1.0em;color:#fff;">A standalone, natively-compiled programming language<br>for supermarket supply-chain &amp; logistics</p>
+  <div class="metric-row">
+    <div><div class="metric">0</div><div class="lbl">Runtime VMs</div></div>
+    <div><div class="metric">1</div><div class="lbl">Dependency (libc)</div></div>
+    <div><div class="metric">43</div><div class="lbl">E2E tests green</div></div>
+    <div><div class="metric">84ms</div><div class="lbl">200k-day sim</div></div>
+  </div>
+  <p class="muted" style="margin-top:24px;font-size:.6em;">github.com/thephilcoulson/shengsionglang</p>
+</section>
+
+<!-- 2 THESIS -->
+<section>
+  <h2>The thesis</h2>
+  <div class="card">Operating a supermarket network is a <b>compilation problem</b>. Inventory, ordering, delivery routing and replenishment are rules that should be <b>written once, checked ahead of time, and executed at native speed</b> — not scripted, not interpreted, not glued together in spreadsheets.</div>
+  <div class="cols">
+    <div>
+      <h3 class="good">What we built</h3>
+      <ul>
+        <li>A <b>domain-specific language</b> (<code>.sheng</code>) whose primitives <em>are</em> supermarket operations</li>
+        <li>A <b>compiler</b> (<code>shengc</code>) that lowers programs to <b>native machine code</b></li>
+        <li>Errors caught at <b>compile time</b>; execution is a plain native binary</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="good">Why it matters to the board</h3>
+      <ul>
+        <li>Store logic is <b>portable &amp; auditable</b> source, not tribal knowledge</li>
+        <li><b>Zero runtime footprint</b> — deploys anywhere libc runs</li>
+        <li>Correctness guarantees before a single unit ships</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3 PIPELINE -->
+<section>
+  <h2>Compilation pipeline</h2>
+  <div class="flow">
+program.sheng ──▶ <span style="color:var(--ss-gold)">shengc</span> ──▶ C source ──▶ cc/clang ──▶ <span class="good">./program</span>  (native ELF)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+&nbsp;&nbsp;lexer │ parser │ codegen&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;runs on the CPU
+  </div>
+  <div class="cols" style="margin-top:14px;">
+    <div class="card"><b>Front end</b><br>Hand-written scanner → recursive-descent parser → typed AST. Deterministic, single pass, precise line diagnostics.</div>
+    <div class="card"><b>Back end</b><br>AST → portable C11. The system C compiler does register allocation, inlining, and machine codegen — we inherit decades of optimization.</div>
+    <div class="card"><b>Output</b><br>A self-contained ELF binary. <code>ldd</code> → <span class="good">libc only</span>. No Python, no JVM, no bytecode loop.</div>
+  </div>
+  <p class="muted" style="font-size:.55em;">Compiler is itself ~1,310 lines of C in <code>src/shengc.c</code> — the classic bootstrap path (cf. early Go, Nim, V).</p>
+</section>
+
+<!-- 4 LANGUAGE -->
+<section>
+  <h2>The language, by example</h2>
+  <pre><code class="language-python" data-trim data-noescape>
+# entities are first-class
+warehouse central { capacity: 100000 }
+store     tampines
+supplier  fairprice { lead_time: 2, reliability: 0.98 }
+truck     lorry { capacity: 1000 }
+product   milk { price: 3.20, category: "dairy" }
+
+# supply-chain statements read like operations
+order   5000 units of milk from fairprice to central
+deliver 500  units of milk from central to tampines via lorry
+sell    420  units of milk at tampines
+
+# declarative replenishment: fires automatically when stock drops
+restock milk at tampines when below 100 order 500 units from fairprice
+
+report
+  </code></pre>
+  <p class="muted" style="font-size:.55em;">Domain nouns (store/warehouse/supplier/truck/product) and verbs (order/deliver/stock/sell/price/restock/report) are language keywords — not library calls.</p>
+</section>
+
+<!-- 5 TYPE / SEMANTIC MODEL -->
+<section>
+  <h2>Value &amp; type model</h2>
+  <div class="cols">
+    <div>
+      <pre><code class="language-c" data-trim>
+typedef enum { V_NIL, V_INT, V_FLOAT,
+               V_BOOL, V_STR } VType;
+typedef struct {
+  VType t;
+  long long i;   /* exact unit counts   */
+  double    f;   /* prices, ratios      */
+  int       b;
+  char     *s;   /* entity names        */
+} Value;
+      </code></pre>
+    </div>
+    <div>
+      <ul>
+        <li><b>Quantities are integers</b> (<code>long long</code>) — no fractional units of stock; enforced at the boundary.</li>
+        <li><b>Money/ratios are doubles</b> with money-safe formatting.</li>
+        <li><b>Mixed arithmetic promotes</b> int→float only when needed; <code>10/2 → 5</code>, <code>7/2 → 3.5</code>.</li>
+        <li>Division/modulo by zero, overselling, over-capacity delivery → <b>trapped</b>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6 CODEGEN -->
+<section>
+  <h2>Codegen: source → native</h2>
+  <div class="cols">
+    <div>
+      <p class="kicker">ShengSiong</p>
+      <pre><code class="language-python" data-trim>
+func margin(retail, cost) {
+  return retail - cost
+}
+sell 30 units of milk at tampines
+      </code></pre>
+    </div>
+    <div>
+      <p class="kicker">Generated C</p>
+      <pre><code class="language-c" data-trim>
+static Value fn_margin(Value ss_retail,
+                       Value ss_cost){
+  return v_sub(ss_retail, ss_cost);
+}
+do_sell(as_name(v_str("milk")),
+        as_name(v_str("tampines")),
+        as_units(v_int(30LL)));
+      </code></pre>
+    </div>
+  </div>
+  <div class="card" style="font-size:.66em;">Functions compile to C functions (native recursion &amp; calls). Control flow compiles to native <code>if</code>/<code>while</code>. Entity ops compile to direct calls into the embedded engine — <b>no dispatch loop, no interpretation overhead.</b></div>
+</section>
+
+<!-- 7 ENGINE -->
+<section>
+  <h2>The supply-chain engine</h2>
+  <p class="muted" style="font-size:.6em;">Emitted verbatim into every binary — a complete inventory system in portable C.</p>
+  <div class="cols">
+    <div class="card"><b>Entities → structs in dynamic arrays</b><br><code>Loc</code>, <code>Prod</code>, <code>Supp</code>, <code>Truck</code>, <code>Rule</code>. O(1) amortized inserts; linear scans that the C compiler vectorizes.</div>
+    <div class="card"><b>Operations → pure functions</b><br><code>do_stock</code>, <code>do_sell</code>, <code>do_order</code>, <code>do_deliver</code>, <code>add_rule</code> — each with invariant checks (no negative inventory, capacity limits).</div>
+  </div>
+  <div class="card"><b>Auto-restock is event-driven</b> — <code>check_rules()</code> runs on every stock mutation. Falling below a threshold triggers an immediate reorder. No polling, no scheduler, deterministic.</div>
+  <pre><code class="language-c" data-trim>
+static void check_rules(const char*prod,const char*store){
+  for(int i=0;i&lt;g_nrules;i++)
+    if(!strcmp(g_rules[i].prod,prod) &amp;&amp; !strcmp(g_rules[i].store,store)){
+      Loc*L=find_loc(store);
+      if(loc_qty(L,prod) &lt; g_rules[i].threshold)
+        loc_add(L,prod,g_rules[i].qty);   /* replenish */
+    }
+}
+  </code></pre>
+</section>
+
+<!-- 8 CORRECTNESS -->
+<section>
+  <h2>Correctness: two lines of defense</h2>
+  <div class="cols">
+    <div>
+      <h3 class="good">Compile time — rejected before deploy</h3>
+      <ul style="font-size:.8em;">
+        <li>Undefined variables</li>
+        <li>Unknown entity properties (<code>milk.color</code>)</li>
+        <li>Non-literal entity config</li>
+        <li>Invalid assignment targets</li>
+        <li>Lex &amp; parse errors, with line numbers</li>
+      </ul>
+      <span class="pill">exit ≠ 0, no binary produced</span>
+    </div>
+    <div>
+      <h3 class="good">Run time — trapped, never silent</h3>
+      <ul style="font-size:.8em;">
+        <li>Overselling stock you don't have</li>
+        <li>Delivery exceeding truck capacity</li>
+        <li>Drawing more than a source holds</li>
+        <li>Division / modulo by zero</li>
+        <li>Dynamically-built unknown product/location</li>
+      </ul>
+      <span class="pill">aborts with a diagnostic</span>
+    </div>
+  </div>
+  <div class="card" style="font-size:.66em;">A tree-walking reference interpreter (Python, <b>100% statement + branch coverage</b>) pins the intended semantics; the native compiler is validated against it.</div>
+</section>
+
+<!-- 9 PERFORMANCE -->
+<section class="center">
+  <h2>Performance</h2>
+  <p style="font-size:.8em;">A 200,000-day store simulation — daily delivery + sale, with a live auto-restock rule evaluated on every mutation:</p>
+  <div class="metric-row">
+    <div><div class="metric">200,000</div><div class="lbl">Simulated days</div></div>
+    <div><div class="metric">84 ms</div><div class="lbl">Wall clock</div></div>
+    <div><div class="metric">~0</div><div class="lbl">GC pauses</div></div>
+    <div><div class="metric">libc</div><div class="lbl">Only dependency</div></div>
+  </div>
+  <pre style="margin-top:20px;"><code class="language-text" data-trim>
+$ time ./scale
+days simulated: 200000
+revenue: 4000000
+widgets left in DC: 96000000
+real  0m0.084s
+  </code></pre>
+  <p class="muted" style="font-size:.55em;">Native code + integer inventory math. Scales linearly; embarrassingly parallel across stores.</p>
+</section>
+
+<!-- 10 COMPARISON -->
+<section>
+  <h2>Why native, not scripted</h2>
+  <table>
+    <thead><tr><th>Dimension</th><th>Spreadsheets / scripts</th><th class="good">ShengSiong</th></tr></thead>
+    <tbody>
+      <tr><td>Execution</td><td>Interpreted / manual</td><td>Native machine code</td></tr>
+      <tr><td>Runtime dependency</td><td>Python/Excel/VM</td><td>libc only</td></tr>
+      <tr><td>Error detection</td><td>At runtime, often silent</td><td>Compile-time + trapped</td></tr>
+      <tr><td>Inventory math</td><td>Float drift</td><td>Exact integer units</td></tr>
+      <tr><td>Auditability</td><td>Opaque cells / glue</td><td>Versioned source</td></tr>
+      <tr><td>Deploy</td><td>Environment-bound</td><td>Single portable binary</td></tr>
+      <tr><td>Restock logic</td><td>Cron / human</td><td>Declarative, event-driven</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 11 ROADMAP -->
+<section>
+  <h2>Roadmap</h2>
+  <div class="cols">
+    <div class="card"><b>Near term</b><ul style="font-size:.85em;"><li>Lists &amp; maps as first-class values</li><li>Multi-file modules / imports</li><li>Cost accounting + margins in the engine</li></ul></div>
+    <div class="card"><b>Mid term</b><ul style="font-size:.85em;"><li>Delivery-route optimization primitives</li><li>Time/calendar model (lead times, spoilage)</li><li>Concurrency across stores</li></ul></div>
+    <div class="card"><b>Platform</b><ul style="font-size:.85em;"><li>Emit to WASM for edge/POS terminals</li><li>Live telemetry hooks from the ledger</li><li>Formal invariant checker</li></ul></div>
+  </div>
+</section>
+
+<!-- 12 ASK / CLOSE -->
+<section data-background-color="#0d0d0f" class="center">
+  <div class="kicker">Summary</div>
+  <h2 style="font-size:1.8em;">Store logic as compiled software</h2>
+  <p style="font-size:.85em;color:#fff;max-width:20em;margin:0 auto;">A real language with its own front end, its own codegen, and a native runtime-free binary — engineered to scale to a national footprint.</p>
+  <div class="metric-row">
+    <div><div class="metric good">Native</div><div class="lbl">No VM</div></div>
+    <div><div class="metric good">Safe</div><div class="lbl">Compile-time checks</div></div>
+    <div><div class="metric good">Fast</div><div class="lbl">84ms / 200k days</div></div>
+    <div><div class="metric good">Open</div><div class="lbl">MIT, on GitHub</div></div>
+  </div>
+  <p style="margin-top:26px;font-size:.7em;color:var(--ss-gold);">github.com/thephilcoulson/shengsionglang</p>
+</section>
+
+</div></div>
+<small class="foot">ShengSiongLang · Board Technical Review · 2026</small>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+Reveal.initialize({
+  hash:true, slideNumber:'c/t', transition:'slide',
+  width:1280, height:760, margin:0.04,
+  plugins:[RevealHighlight, RevealNotes]
+});
+</script>
+</body>
+</html>
