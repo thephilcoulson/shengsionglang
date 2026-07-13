@@ -1,0 +1,41 @@
+# supermarket.sheng -- a complete ShengSiong program.
+# Models a small Sheng Siong-style operation: a warehouse feeding two stores,
+# with automatic restocking when shelves run low.
+
+warehouse central { capacity: 100000 }
+store tampines
+store jurong
+
+supplier fairprice { lead_time: 2, reliability: 0.98 }
+truck lorry { capacity: 1000 }
+
+product milk    { price: 3.20, category: "dairy" }
+product rice    { price: 9.90, category: "staple" }
+product kaya    { price: 4.50, category: "spread" }
+
+# Bring stock into the central warehouse from the supplier.
+order 5000 units of rice from fairprice to central
+order 3000 units of milk from fairprice to central
+order 1000 units of kaya from fairprice to central
+
+# Push stock out to the stores.
+deliver 800 units of rice from central to tampines via lorry
+deliver 500 units of milk from central to tampines via lorry
+deliver 600 units of rice from central to jurong via lorry
+
+# Automatic replenishment rules.
+restock rice at tampines when below 200 order 800 units from fairprice
+restock milk at tampines when below 100 order 500 units from fairprice
+
+# A day of trade.
+sell 650 units of rice at tampines     # drops below 200 -> auto-restock kicks in
+sell 420 units of milk at tampines     # drops below 100 -> auto-restock kicks in
+
+# A tiny bit of computation via the general-purpose layer.
+func margin(retail, cost) { return retail - cost }
+print "rice margin per unit: " + margin(rice.price, 7.00)
+print "tampines rice on hand: " + inventory(rice, tampines)
+print "tampines milk on hand: " + inventory(milk, tampines)
+print "total revenue so far: " + revenue()
+
+report

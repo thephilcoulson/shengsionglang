@@ -1,0 +1,24 @@
+# build artifacts
+shengc
+*.o
+*.out
+a.out
+
+# generated C from the compiler
+examples/*.c
+
+# native binaries produced from examples/tests
+/market
+/supermarket
+
+# python (test harness / reference interpreter)
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# editor / OS
+.DS_Store
+*.swp

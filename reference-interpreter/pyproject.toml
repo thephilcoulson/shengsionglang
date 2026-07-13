@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shengsiong"
+version = "1.0.0"
+description = "A domain-specific language that abstracts supermarket supply-chain and logistics."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Phil Coulson (Agently)" }]
+
+[project.scripts]
+shengsiong = "shengsiong.cli:main"
+
+[tool.setuptools]
+packages = ["shengsiong"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["shengsiong"]
+omit = ["shengsiong/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+]
+fail_under = 100
